@@ -20,6 +20,8 @@
 - 完整的单元测试和集成测试支持
 - 纯API服务，仅返回JSON数据，更适合集成
 - 增强的安全保护：API密钥认证、敏感信息掩码、安全的错误处理
+- 音源质量智能选择：根据格式、比特率自动选择最佳音源
+- 网络条件适配：根据网络状况选择合适的音质
 
 ## 运行
 
@@ -30,25 +32,48 @@ pnpm install
 # 开发环境运行
 pnpm run dev
 
+# 清理构建目录
+pnpm run clean
+
 # 构建
 pnpm run build
 
 # 生产环境运行
 pnpm start
 
+# 直接启动（不使用启动脚本）
+pnpm run start:direct
+
+# 生产环境直接启动构建后的代码
+pnpm run start:prod
+
 # 使用PM2集群模式运行
 pnpm run prd
 
 # 运行测试
 pnpm test
+
+# 生成API密钥
+pnpm run generate-api-key
+
+# 安全审计
+pnpm run security-audit
+
+# 修复安全漏洞
+pnpm run security-fix
+
+# 运行安全检查
+pnpm run security-check
 ```
 
 ## 项目结构
 
 ```
-UNM-Server/
+UNM-Server-F-API/
 ├── dist/               # 构建输出目录（不包含在代码仓库中）
 ├── docs/               # 文档
+├── logs/               # 日志目录
+├── node_modules/       # 依赖包
 ├── public/             # 公共资源目录（仅用于favicon等基本资源）
 ├── script/             # 部署和管理脚本
 ├── src/                # 源代码
@@ -57,11 +82,16 @@ UNM-Server/
 │   ├── plugins/        # Fastify插件（包括Swagger）
 │   ├── routes/         # API路由
 │   ├── services/       # 业务逻辑
+│   │   ├── cache/      # 缓存服务
+│   │   ├── db/         # 数据库服务
+│   │   ├── monitoring/ # 监控服务
+│   │   ├── quality/    # 音质评估服务
+│   │   └── music.ts    # 音乐服务
 │   ├── types/          # 类型定义
 │   ├── utils/          # 工具函数
 │   ├── app.ts          # 应用配置
 │   ├── config.ts       # 环境变量处理
-│   └── main.ts         # 入口文件
+│   └── server.ts       # 入口文件
 └── test/               # 测试
     ├── unit/           # 单元测试
     └── integration/    # 集成测试
@@ -143,26 +173,62 @@ Authorization: Bearer YOUR_API_KEY
 
 ### 参数
 
-| 参数   | 默认           |
-| ------ | -------------- |
-| id     | /              |
-| server | 见下方音源清单 |
+| 参数       | 默认           | 说明                                     |
+| ---------- | -------------- | ---------------------------------------- |
+| id         | /              | 歌曲ID                                   |
+| server     | 见下方音源清单 | 音源列表，多个用逗号分隔                 |
+| quality    | auto           | 音质选择：auto, best, good, normal, low  |
+| network    | wifi           | 网络类型：wifi, 4g, 3g, 2g               |
+| format     | /              | 指定格式：flac, mp3, aac等               |
+| min_br     | 0              | 最低比特率(kbps)                         |
+| max_br     | 999999         | 最高比特率(kbps)                         |
+
+### 音质智能选择
+
+系统支持基于音频格式、比特率和文件大小的智能音质选择，可通过以下方式使用：
+
+1. **自动模式**：不指定参数时，系统会自动选择最佳音质
+   ```
+   /match?id=1962165898
+   ```
+
+2. **指定音质等级**：
+   ```
+   /match?id=1962165898&quality=best
+   ```
+
+   支持的音质等级：
+   - `best`: 优先选择无损格式(FLAC/WAV)或高比特率(320kbps+)
+   - `good`: 优先选择高质量MP3/AAC (256-320kbps)
+   - `normal`: 中等质量 (128-256kbps)
+   - `low`: 低质量，适合弱网环境 (<128kbps)
+
+3. **网络条件适配**：
+   ```
+   /match?id=1962165898&network=3g
+   ```
+
+   系统会根据网络类型自动调整音质选择策略：
+   - `wifi`: 优先选择最高音质，不考虑文件大小
+   - `4g`: 平衡音质和文件大小
+   - `3g`/`2g`: 优先选择较小文件，确保流畅播放
 
 ### 音源清单
 
 | 名称                        | 代号         | 默认启用 | 注意事项                                                    |
 | --------------------------- | ------------ | -------- | ----------------------------------------------------------- |
-| QQ 音乐                     | `qq`         |          | 需要在环境变量中准备自己的 `QQ_COOKIE`                                  |
+| QQ 音乐                     | `qq`         | ✅       | 需要在环境变量中准备自己的 `QQ_COOKIE`                      |
 | 酷狗音乐                    | `kugou`      | ✅       |                                                             |
 | 酷我音乐                    | `kuwo`       | ✅       |                                                             |
-| 咪咕音乐                    | `migu`       | ✅       | 需要在环境变量中准备自己的 `MIGU_COOKIE`                                |
-| JOOX                        | `joox`       |          | 需要在环境变量中准备自己的 `JOOX_COOKIE`，似乎有严格地区限制。          |
-| YouTube（纯 JS 解析方式）   | `youtube`    |          | 需要 Google 认定的**非中国大陆区域** IP 地址。              |
-| yt-download                 | `ytdownload` |          | **似乎不能使用**。                                          |
-| YouTube（通过 `youtube-dl`) | `youtubedl`  |          | 需要自行安装 `youtube-dl`。                                 |
-| YouTube（通过 `yt-dlp`)     | `ytdlp`      | ✅       | 需要自行安装 `yt-dlp`（`youtube-dl` 仍在活跃维护的 fork）。 |
+| 咪咕音乐                    | `migu`       | ✅       | 需要在环境变量中准备自己的 `MIGU_COOKIE`                    |
+| JOOX                        | `joox`       |          | 需要在环境变量中准备自己的 `JOOX_COOKIE`，有严格地区限制    |
+| YouTube（纯 JS 解析方式）   | `youtube`    |          | 需要 Google 认定的**非中国大陆区域** IP 地址                |
+| YouTube（通过 `yt-dlp`)     | `ytdlp`      | ✅       | 需要自行安装 `yt-dlp`（`youtube-dl` 的活跃维护 fork）      |
 | B 站音乐                    | `bilibili`   | ✅       |                                                             |
 | 第三方网易云 API            | `pyncmd`     |          |                                                             |
+| 网易云音乐                  | `netease`    | ✅       | 默认音源，用于获取原始信息                                  |
+| Spotify                     | `spotify`    |          | 需要配置 Spotify API 密钥                                   |
+| Tidal                       | `tidal`      |          | 需要配置 Tidal 账户信息                                     |
 
 ## 项目管理
 
@@ -197,6 +263,33 @@ pnpm test -- test/unit/config.test.ts
 pnpm test -- --coverage
 ```
 
+## 安全特性
+
+项目实现了多层次的安全保护机制，确保API服务在生产环境中安全稳定运行：
+
+### 认证与授权
+- API密钥验证：支持多密钥管理和缓存机制
+- IP白名单：支持基于IP地址的访问控制，包括通配符匹配
+- 请求频率限制：基于IP和API密钥的限流机制，防止滥用
+
+### 数据保护
+- 敏感信息掩码：自动对日志中的API密钥、Cookie等敏感信息进行掩码处理
+- 安全的错误处理：生产环境中隐藏敏感错误信息和堆栈跟踪
+- 输入验证与净化：对所有API参数进行类型和格式验证，防止注入攻击
+
+### 网络安全
+- 安全响应头：配置CSP、HSTS等安全头，增强浏览器端安全性
+- CORS保护：严格的跨域资源共享配置
+- HTTPS支持：推荐使用HTTPS，并提供相关配置
+
+### 安全工具
+- 安全审计：`pnpm run security-audit` 检查依赖安全漏洞
+- 安全修复：`pnpm run security-fix` 自动修复可修复的漏洞
+- 安全检查：`pnpm run security-check` 运行自定义安全检查
+- API密钥生成：`pnpm run generate-api-key` 生成安全的API密钥
+
+详细的安全配置和最佳实践请参考 [安全最佳实践文档](./docs/SECURITY-BEST-PRACTICES.md)。
+
 ## 开发建议
 
 - 使用pnpm作为包管理器，避免使用npm生成package-lock.json
@@ -206,9 +299,11 @@ pnpm test -- --coverage
 - 使用shx等跨平台工具代替特定操作系统的命令
 - 使用统一的配置导入方式：`import { config } from '../config'`
 - 添加单元测试和集成测试，确保代码质量
+- 定期运行安全审计和更新依赖
 
 ## 现代化版本更新内容
 
+### 2.0版本更新
 - TypeScript重构，提高代码质量
 - 使用Fastify替代Koa，提升性能
 - Redis缓存支持，优化高并发场景
@@ -220,10 +315,25 @@ pnpm test -- --coverage
 - 完整的测试框架支持
 - 移除前端渲染，改为纯API服务，更易于集成
 
+### 2.1版本更新
+- 音源质量智能选择系统
+- 网络条件自适应音质选择
+- 增强的安全保护机制
+- 更多音乐平台支持
+- 优化的缓存策略
+- 更完善的错误处理
+- 改进的API文档
+- 依赖项更新到最新版本
+
 ## 计划中的功能 (Todo)
 
-- 缓存优化
-- 音源质量智能选择
+- ✅ 缓存优化 - 已实现Redis缓存和内存缓存优化
+- ✅ 音源质量智能选择 - 已实现基于格式和比特率的质量评估
+- ✅ 网络条件适配 - 已实现根据网络状况选择合适音质
 - TypeScript类型定义完善
 - 国际化支持
 - 第三方调用示例
+- 音源可用性监控
+- 更多音乐平台支持
+- 音频转码功能
+- 歌词翻译功能
