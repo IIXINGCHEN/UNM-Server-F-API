@@ -6,11 +6,16 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+log-*.txt
+error-*.txt
 
 # Dependencies
 node_modules
 .pnp
 .pnp.js
+package-lock.json
+yarn.lock
+# Keep pnpm-lock.yaml (recommended for pnpm projects)
 
 # Build outputs
 dist
@@ -18,6 +23,8 @@ dist-ssr
 build
 coverage
 *.tsbuildinfo
+*.js.map
+*.d.ts.map
 
 # Environment variables
 .env
@@ -26,10 +33,14 @@ coverage
 !.env.example
 !.env.development
 .env.production
+.env.*.production
 
 # System files
 .DS_Store
 Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
 
 # Editor directories and files
 .vscode/*
@@ -43,15 +54,59 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+*.sublime-*
+.project
+.classpath
+.c9/
+*.launch
+.settings/
 
 # Temporary files
 *.tmp
 *.bak
 .temp
+.cache
+.eslintcache
+.stylelintcache
+.npm
+.history
 
-# API Keys (Should not be committed)
+# API Keys and Sensitive Information (Should not be committed)
 api-keys.json
+**/credentials.*
+**/secrets.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.cer
 
+# Test and Debug
 /cypress/videos/
 /cypress/screenshots/
+.nyc_output
 .augment-guidelines
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Production specific
+.vercel
+.netlify
+.serverless/
+.fusebox/
+.dynamodb/
+.next/
+out/
+.nuxt/
+.docz/
+.vuepress/dist
+
+# Monitoring and Profiling
+heapdump-*
+*.heapsnapshot
+*.cpuprofile
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
