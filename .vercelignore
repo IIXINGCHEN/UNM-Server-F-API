@@ -1,0 +1,16 @@
+.git
+node_modules
+.env
+.env.local
+.env.development
+.env.test
+README.md
+.gitignore
+*.log
+deploy.sh
+.github
+docker
+Dockerfile
+docker-compose.yml
+.vscode
+.idea

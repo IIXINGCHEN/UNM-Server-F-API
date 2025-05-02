@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "name": "unm-server",
+  "builds": [
+    {
+      "src": "dist/server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "dist/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "VERCEL": "1"
+  },
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
+  "regions": [
+    "hnd1",
+    "sin1",
+    "icn1"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "TypeScript 配置文件",
+    "type": "object",
+    "properties": {
+        "compilerOptions": {
+            "type": "object",
+            "description": "编译器选项"
+        },
+        "include": {
+            "type": "array",
+            "description": "包含的文件"
+        },
+        "exclude": {
+            "type": "array",
+            "description": "排除的文件"
+        }
+    }
+}
